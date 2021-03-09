@@ -16,10 +16,19 @@
 
 package com.google.samples.propertyanimation
 
+import android.animation.*
+import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.View
+import android.view.ViewGroup
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.LinearInterpolator
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ImageView
+import androidx.appcompat.widget.AppCompatImageView
+import androidx.core.animation.addListener
 
 
 class MainActivity : AppCompatActivity() {
@@ -69,22 +78,99 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun ObjectAnimator.disableViewDuringAnimation(view : View){
+        addListener(object: AnimatorListenerAdapter() {
+            override fun onAnimationStart(animation: Animator?) {
+                super.onAnimationStart(animation)
+                view.isEnabled = false
+            }
+
+            override fun onAnimationEnd(animation: Animator?) {
+                super.onAnimationEnd(animation)
+                view.isEnabled = true
+            }
+        })
+    }
+
     private fun rotater() {
+        val animator = ObjectAnimator.ofFloat(star, View.ROTATION, -360f, 0f)
+        animator.duration = 1000
+        animator.disableViewDuringAnimation(rotateButton)
+        animator.start()
     }
 
     private fun translater() {
+        val animator = ObjectAnimator.ofFloat(star, View.TRANSLATION_X, 0f, 200f)
+        animator.repeatCount = 1
+        animator.repeatMode = ObjectAnimator.REVERSE
+        animator.disableViewDuringAnimation(translateButton)
+        animator.start()
     }
 
     private fun scaler() {
+        val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 4f)
+        val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 4f)
+        val animator = ObjectAnimator.ofPropertyValuesHolder(star, scaleX, scaleY)
+        animator.repeatCount = 1
+        animator.repeatMode = ObjectAnimator.REVERSE
+        animator.disableViewDuringAnimation(scaleButton)
+        animator.start()
     }
 
     private fun fader() {
+        val animator = ObjectAnimator.ofFloat(star, View.ALPHA, 0f)
+        animator.repeatCount = 1
+        animator.duration = 1000
+        animator.repeatMode = ObjectAnimator.REVERSE
+        animator.disableViewDuringAnimation(fadeButton)
+        animator.start()
     }
 
     private fun colorizer() {
+        val animator = ObjectAnimator.ofArgb(star.parent, "backgroundColor", Color.BLACK, Color.RED)
+        animator.disableViewDuringAnimation(colorizeButton)
+        animator.repeatCount = 1
+        animator.duration = 1000
+        animator.repeatMode = ObjectAnimator.REVERSE
+        animator.start()
     }
 
     private fun shower() {
+        val container = star.parent as ViewGroup
+        val containerW = container.width
+        val containerH = container.height
+        var starW = star.width.toFloat()
+        var starH = star.height.toFloat()
+        val newStar = AppCompatImageView(this)
+        newStar.setImageResource(R.drawable.ic_star)
+        newStar.layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        )
+        container.addView(newStar)
+        newStar.scaleX = Math.random().toFloat() * 1.5f + .1f
+        newStar.scaleY = newStar.scaleX
+        starW *= newStar.scaleX
+        starH *= newStar.scaleY
+        newStar.translationX = Math.random().toFloat() * containerH - starW /2
+
+        val fallingAnimator = ObjectAnimator.ofFloat(newStar, View.TRANSLATION_Y, -starH, containerH + starH)
+        fallingAnimator.interpolator = AccelerateInterpolator(1f)
+
+        val rotateAnimator = ObjectAnimator.ofFloat(newStar, View.ROTATION, (Math.random()*1080).toFloat())
+        rotateAnimator.interpolator = LinearInterpolator()
+
+        val set = AnimatorSet()
+        set.playTogether(fallingAnimator, rotateAnimator)
+        set.duration = (Math.random()*1500f + 500f).toLong()
+        set.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator?) {
+                super.onAnimationEnd(animation)
+                container.removeView(newStar)
+            }
+        })
+        set.start()
+
     }
 
 }
